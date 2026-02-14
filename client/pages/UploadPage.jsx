@@ -7,7 +7,7 @@ import api from '../services/api';
 const UploadPage = () => {
   const { user } = useAuth();
   const [progress, setProgress] = useState(0);
-  const [form, setForm] = useState({ title: '', description: '', author: '', genres: '' });
+  const [form, setForm] = useState({ title: '', description: '', tags: '', status: 'ONGOING' });
   const [pdf, setPdf] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
 
@@ -28,7 +28,9 @@ const UploadPage = () => {
       toast.success('Manga uploaded');
       setProgress(0);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Upload failed');
+      const data = error.response?.data;
+      const banHint = data?.until || data?.reason ? ` (${data.reason || 'No reason'}${data.until ? `, until ${new Date(data.until).toLocaleString()}` : ', permanent'})` : '';
+      toast.error((data?.message || 'Upload failed') + banHint);
     }
   };
 
@@ -37,8 +39,12 @@ const UploadPage = () => {
       <h1 className="text-xl font-semibold">Upload Manga</h1>
       <input required placeholder="Title" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, title: e.target.value })} />
       <textarea placeholder="Description" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, description: e.target.value })} />
-      <input placeholder="Author" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, author: e.target.value })} />
-      <input placeholder="Genres comma separated" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, genres: e.target.value })} />
+      <input placeholder="Tags comma separated" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+      <select className="w-full rounded-lg bg-slate-800 p-2" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+        <option value="ONGOING">ONGOING</option>
+        <option value="COMPLETED">COMPLETED</option>
+        <option value="HIATUS">HIATUS</option>
+      </select>
       <input required type="file" accept="application/pdf" onChange={(e) => setPdf(e.target.files[0])} />
       <input required type="file" accept="image/*" onChange={(e) => setThumbnail(e.target.files[0])} />
       <div className="h-2 overflow-hidden rounded bg-slate-800"><div className="h-full bg-indigo-400" style={{ width: `${progress}%` }} /></div>

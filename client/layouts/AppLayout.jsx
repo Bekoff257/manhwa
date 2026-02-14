@@ -15,7 +15,7 @@ const AppLayout = ({ children }) => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.2 }}
-          className="mx-auto max-w-6xl px-4 py-8"
+          className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8"
         >
           {children}
         </motion.main>
