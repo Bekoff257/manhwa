@@ -5,6 +5,9 @@ import AuthPage from './pages/AuthPage';
 import UploadPage from './pages/UploadPage';
 import ReaderPage from './pages/ReaderPage';
 import AdminPage from './pages/AdminPage';
+import MangaDetailsPage from './pages/MangaDetailsPage';
+import LibraryPage from './pages/LibraryPage';
+import SettingsPage from './pages/SettingsPage';
 import { useAuth } from './context/AuthContext';
 
 const App = () => {
@@ -15,9 +18,12 @@ const App = () => {
     <AppLayout>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/manga/:id" element={<MangaDetailsPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/reader/:id" element={<ReaderPage />} />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

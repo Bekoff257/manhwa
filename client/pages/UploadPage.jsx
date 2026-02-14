@@ -7,7 +7,7 @@ import api from '../services/api';
 const UploadPage = () => {
   const { user } = useAuth();
   const [progress, setProgress] = useState(0);
-  const [form, setForm] = useState({ title: '', description: '', tags: '', status: 'ONGOING' });
+  const [form, setForm] = useState({ title: '', description: '', author: '', genres: '', tags: '', status: 'ONGOING' });
   const [pdf, setPdf] = useState(null);
   const [thumbnail, setThumbnail] = useState(null);
 
@@ -38,7 +38,9 @@ const UploadPage = () => {
     <form onSubmit={submit} className="mx-auto max-w-xl space-y-3 rounded-2xl border border-slate-800 bg-slate-900 p-6">
       <h1 className="text-xl font-semibold">Upload Manga</h1>
       <input required placeholder="Title" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, title: e.target.value })} />
+      <input placeholder="Author" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, author: e.target.value })} />
       <textarea placeholder="Description" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      <input placeholder="Genres comma separated" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, genres: e.target.value })} />
       <input placeholder="Tags comma separated" className="w-full rounded-lg bg-slate-800 p-2" onChange={(e) => setForm({ ...form, tags: e.target.value })} />
       <select className="w-full rounded-lg bg-slate-800 p-2" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
         <option value="ONGOING">ONGOING</option>
