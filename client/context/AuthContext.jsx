@@ -13,6 +13,26 @@ import api from '../services/api';
 
 const AuthContext = createContext(null);
 
+const TOKEN_WAIT_RETRY_DELAY_MS = 250;
+const TOKEN_WAIT_RETRIES = 4;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getFirebaseIdToken = async (user) => {
+  for (let attempt = 0; attempt < TOKEN_WAIT_RETRIES; attempt += 1) {
+    try {
+      const token = await user.getIdToken(attempt > 0);
+      if (token) return token;
+    } catch (error) {
+      if (attempt === TOKEN_WAIT_RETRIES - 1) throw error;
+    }
+
+    await wait(TOKEN_WAIT_RETRY_DELAY_MS);
+  }
+
+  return null;
+};
+
 export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [dbUser, setDbUser] = useState(null);
@@ -23,13 +43,20 @@ export const AuthProvider = ({ children }) => {
     const unsub = onAuthStateChanged(auth, async (current) => {
       setAuthResolved(true);
       setFirebaseUser(current);
+
       if (!current) {
         setDbUser(null);
         setLoading(false);
         return;
       }
+
       try {
-        const { data } = await api.post('/auth/sync');
+        const token = await getFirebaseIdToken(current);
+        const requestConfig = token
+          ? { headers: { Authorization: `Bearer ${token}` }, skipAuth: true }
+          : undefined;
+
+        const { data } = await api.post('/auth/sync', {}, requestConfig);
         setDbUser(data.user);
       } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to sync user');
@@ -37,6 +64,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     });
+
     return unsub;
   }, []);
 
