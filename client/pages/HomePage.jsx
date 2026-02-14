@@ -17,17 +17,20 @@ const HomePage = () => {
     load();
   }, []);
 
-  return loading ? (
-    <SkeletonGrid />
-  ) : (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Trending uploads</h1>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+  if (loading) return <SkeletonGrid />;
+
+  return (
+    <section className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-semibold">Trending uploads</h1>
+        <p className="text-sm text-slate-400">Fresh chapters and community favorites.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {data.items.map((manga) => (
           <MangaCard key={manga._id} manga={manga} />
         ))}
       </div>
-    </div>
+    </section>
   );
 };
 
