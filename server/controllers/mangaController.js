@@ -1,39 +1,73 @@
+import path from 'path';
 import Manga from '../models/Manga.js';
-import { firebaseBucket } from '../config/firebaseAdmin.js';
+import { supabase } from '../config/supabase.js';
 
-const uploadBuffer = async (file, folder) => {
-  const ext = file.originalname.split('.').pop();
-  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const blob = firebaseBucket.file(filename);
-
-  await blob.save(file.buffer, { contentType: file.mimetype, public: true });
-  return `https://storage.googleapis.com/${firebaseBucket.name}/${filename}`;
-};
+const sanitizeFileName = (filename = '') =>
+  path
+    .parse(filename)
+    .name.replace(/[^a-zA-Z0-9-_]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'file';
 
 export const createManga = async (req, res) => {
-  if (!firebaseBucket) return res.status(500).json({ message: 'Firebase Storage not configured' });
+  try {
+    const { title, description = '', author = '', genres = '' } = req.body;
+    if (!title) return res.status(400).json({ message: 'Title is required' });
 
-  const { title, description = '', author = '', genres = '' } = req.body;
-  if (!title) return res.status(400).json({ message: 'Title is required' });
+    const pdfFile = req.files?.pdf?.[0];
+    const thumbFile = req.files?.thumbnail?.[0];
 
-  const pdfUrl = await uploadBuffer(req.files.pdf[0], 'manga-pdfs');
-  const thumbnailUrl = await uploadBuffer(req.files.thumbnail[0], 'manga-thumbnails');
+    if (!pdfFile || !thumbFile) {
+      return res.status(400).json({ message: 'PDF and thumbnail are required' });
+    }
 
-  const manga = await Manga.create({
-    title,
-    description,
-    author,
-    genres: String(genres)
-      .split(',')
-      .map((g) => g.trim())
-      .filter(Boolean),
-    pdfUrl,
-    thumbnailUrl,
-    uploadedBy: req.user._id
-  });
+    const safeFileName = sanitizeFileName(pdfFile.originalname || title);
+    const pdfPath = `manga-pdfs/${Date.now()}-${safeFileName}.pdf`;
 
-  const populated = await manga.populate('uploadedBy', 'username role avatar');
-  res.status(201).json({ manga: populated });
+    const { error: pdfError } = await supabase.storage.from('manga-bucket').upload(pdfPath, pdfFile.buffer, {
+      contentType: pdfFile.mimetype,
+      upsert: false
+    });
+
+    if (pdfError) return res.status(500).json({ message: pdfError.message });
+
+    const { data: pdfPublic } = supabase.storage.from('manga-bucket').getPublicUrl(pdfPath);
+    const pdfUrl = pdfPublic.publicUrl;
+
+    const thumbExt = path.extname(thumbFile.originalname || '').replace('.', '') || 'jpg';
+    const thumbPath = `thumbnails/${Date.now()}-${safeFileName}.${thumbExt}`;
+
+    const { error: thumbError } = await supabase.storage
+      .from('manga-bucket')
+      .upload(thumbPath, thumbFile.buffer, {
+        contentType: thumbFile.mimetype,
+        upsert: false
+      });
+
+    if (thumbError) return res.status(500).json({ message: thumbError.message });
+
+    const { data: thumbPublic } = supabase.storage.from('manga-bucket').getPublicUrl(thumbPath);
+    const thumbnailUrl = thumbPublic.publicUrl;
+
+    const manga = await Manga.create({
+      title,
+      description,
+      author,
+      genres: String(genres)
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean),
+      pdfUrl,
+      thumbnailUrl,
+      uploadedBy: req.user._id
+    });
+
+    const populated = await manga.populate('uploadedBy', 'username role avatar');
+    return res.status(201).json({ manga: populated });
+  } catch (error) {
+    console.error('Create manga error:', error);
+    return res.status(500).json({ message: 'Failed to create manga' });
+  }
 };
 
 export const listManga = async (req, res) => {
