@@ -32,8 +32,11 @@ const waitForAuthReady = async () => {
 api.interceptors.request.use(async (config) => {
   if (config.skipAuth) return config;
 
+
   config.headers = config.headers || {};
   if (config.headers.Authorization) return config;
+
+
 
   await waitForAuthReady();
 
@@ -42,7 +45,14 @@ api.interceptors.request.use(async (config) => {
 
   try {
     const token = await user.getIdToken();
+
     if (token) config.headers.Authorization = `Bearer ${token}`;
+
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
   } catch (error) {
     console.warn('Unable to attach Firebase ID token to request.', error);
   }
