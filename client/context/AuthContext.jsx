@@ -17,9 +17,11 @@ export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [dbUser, setDbUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authResolved, setAuthResolved] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (current) => {
+      setAuthResolved(true);
       setFirebaseUser(current);
       if (!current) {
         setDbUser(null);
@@ -43,6 +45,7 @@ export const AuthProvider = ({ children }) => {
       firebaseUser,
       user: dbUser,
       loading,
+      authResolved,
       signup: async ({ email, password, username }) => {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         if (username) await updateProfile(credential.user, { displayName: username });
@@ -51,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       loginWithGoogle: () => signInWithPopup(auth, googleProvider),
       logout: () => signOut(auth)
     }),
-    [firebaseUser, dbUser, loading]
+    [firebaseUser, dbUser, loading, authResolved]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
